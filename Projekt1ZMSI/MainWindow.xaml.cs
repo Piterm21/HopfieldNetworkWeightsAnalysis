@@ -14,6 +14,7 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Windows.Controls.Primitives;
 using System.IO;
+using System.Globalization;
 
 namespace Projekt1ZMSI
 {
@@ -31,6 +32,7 @@ namespace Projekt1ZMSI
         public DMU.Math.Matrix startingValue;
         public DMU.Math.Matrix currentValue;
         public List<SingleIterationResult> iterationHistory;
+        public List<SingleIterationResult> foundPattern;
         public ResultType resultType;
         public int index;
         public bool synchronousMode;
@@ -60,199 +62,19 @@ namespace Projekt1ZMSI
 
         List<TestDataAndFields> synchronousTestDataAndFields;
         List<TestDataAndFields> asynchronousTestDataAndFields;
-        DMU.Math.Matrix matrixI = new DMU.Math.Matrix(new double[] { 0.1, 0.1, 0.1 }, true);
         DMU.Math.Matrix passedWeightsMatrix;
 
         List<DMU.Math.Matrix> randomWeigthMatrixes;
         List<List<TestDataAndFields>> randomWeightsMatrixesAnalysisResults;
         List<PointAnalysisResult> pointAnalysisResults;
 
-        public static void addNMStarWideColumnsToGrid (int n, int m, ref Grid grid)
-        {
-            for (int i = 0; i < n; i++) {
-                ColumnDefinition columnDefinition = new ColumnDefinition();
-                columnDefinition.Width = new GridLength(m, GridUnitType.Star);
-                grid.ColumnDefinitions.Add(columnDefinition);
-            }
-        }
-
-        public static void addNMStarHighRowsToGrid (int n, int m, ref Grid grid)
-        {
-            for (int i = 0; i < n; i++) {
-                RowDefinition rowDefinition = new RowDefinition();
-                rowDefinition.Height = new GridLength(m, GridUnitType.Star);
-                grid.RowDefinitions.Add(rowDefinition);
-            }
-        }
-
-        public static void addNLabelsToGridWithBitsOfIAsContent (int n, ref Grid grid, int value)
-        {
-            for (int i = 0; i < n; i++) {
-                Label label = new Label();
-                Grid.SetRow(label, i);
-                label.VerticalContentAlignment = VerticalAlignment.Center;
-                label.HorizontalContentAlignment = HorizontalAlignment.Center;
-                label.BorderBrush = Brushes.Black;
-                label.BorderThickness = new Thickness(1);
-                label.Content = (value >> 2 - i & 0x1) == 0 ? -1 : 1;
-                grid.Children.Add(label);
-            }
-        }
-
-        public static void addNLabelsToGridWithArrayAsContent<T> (int n, ref Grid grid, T[] values)
-        {
-            for (int i = 0; i < n; i++) {
-                Label label = new Label();
-                Grid.SetRow(label, i);
-                label.VerticalContentAlignment = VerticalAlignment.Center;
-                label.HorizontalContentAlignment = HorizontalAlignment.Center;
-                label.BorderBrush = Brushes.Black;
-                label.BorderThickness = new Thickness(1);
-                label.Content = values[i];
-                grid.Children.Add(label);
-            }
-        }
-
-        public static void addNLabelsToGridWithArrayAsContentSetColumnAddToResultList<T> (int n, int column, ref Grid grid, T[] values, List<PointAnalysisResult> resultsList)
-        {
-            for (int i = 0; i < n; i++) {
-                Label label = new Label();
-                Grid.SetColumn(label, column);
-                Grid.SetRow(label, i);
-                label.VerticalContentAlignment = VerticalAlignment.Center;
-                label.HorizontalContentAlignment = HorizontalAlignment.Center;
-                label.BorderBrush = Brushes.Black;
-                label.BorderThickness = new Thickness(1);
-                label.Content = values[i];
-                grid.Children.Add(label);
-
-                if (i != 0) {
-                    resultsList[i - 1].labelResults.Add(label);
-                }
-            }
-        }
-
-        public static void addNLabelsToUniformGridWithArrayAsContent<T> (int n, ref UniformGrid grid, T[] values)
-        {
-            for (int i = 0; i < n; i++) {
-                Label label = new Label();
-                label.VerticalContentAlignment = VerticalAlignment.Center;
-                label.HorizontalContentAlignment = HorizontalAlignment.Center;
-                label.BorderBrush = Brushes.Black;
-                label.BorderThickness = new Thickness(1);
-                label.Content = values[i];
-                grid.Children.Add(label);
-            }
-        }
-
-        public static void addNLabelsToGridWithStringValueAndAddToList (int n, ref Grid grid, string value, ref List<Label> list)
-        {
-            for (int i = 0; i < n; i++) {
-                Label label = new Label();
-                Grid.SetRow(label, i);
-                label.VerticalContentAlignment = VerticalAlignment.Center;
-                label.HorizontalContentAlignment = HorizontalAlignment.Center;
-                label.BorderBrush = Brushes.Black;
-                label.BorderThickness = new Thickness(1);
-                label.Content = value;
-                grid.Children.Add(label);
-                list.Add(label);
-            }
-        }
-
-        private UniformGrid createTestDataAndFieldsReturnUniformGridContainingResultElements(bool isSynchronousMode, ref List<TestDataAndFields> listOfTestDataAndFields)
-        {
-            UniformGrid uniformGrid = new UniformGrid();
-            uniformGrid.Rows = 2;
-
-            for (int i = 0; i < 8; i++) {
-                TestDataAndFields currentTestDataAndFields = new TestDataAndFields();
-                currentTestDataAndFields.iterationHistory = new List<SingleIterationResult>();
-                currentTestDataAndFields.resultValueLabels = new List<Label>();
-                currentTestDataAndFields.index = i;
-                currentTestDataAndFields.synchronousMode = isSynchronousMode;
-
-                GroupBox groupBox = new GroupBox();
-                {
-                    groupBox.Header = "Badanie " + (i + 1);
-                    Grid grid = new Grid();
-                    {
-                        addNMStarWideColumnsToGrid(3, 1, ref grid);
-                        addNMStarHighRowsToGrid(1, 3, ref grid);
-                        addNMStarHighRowsToGrid(2, 1, ref grid);
-
-                        Grid gridInputs = new Grid();
-                        {
-                            addNMStarHighRowsToGrid(3, 1, ref gridInputs);
-                            Grid.SetColumn(gridInputs, 0);
-                            addNLabelsToGridWithBitsOfIAsContent(3, ref gridInputs, i);
-
-                            currentTestDataAndFields.startingValue = new DMU.Math.Matrix(
-                                new double[] {
-                                        ((i >> (2 - 0)) & 0x1) == 0 ? -1 : 1,
-                                        ((i >> (2 - 1)) & 0x1) == 0 ? -1 : 1,
-                                        ((i >> (2 - 2)) & 0x1) == 0 ? -1 : 1
-                                },
-                                true
-                            );
-
-                            currentTestDataAndFields.currentValue = currentTestDataAndFields.startingValue.Clone();
-                        }
-
-                        grid.Children.Add(gridInputs);
-
-                        Label label = new Label();
-                        {
-                            Grid.SetColumn(label, 1);
-                            Grid.SetRow(label, 0);
-                            label.VerticalAlignment = VerticalAlignment.Center;
-                            label.HorizontalAlignment = HorizontalAlignment.Center;
-                            label.Content = "=>";
-                        }
-                        grid.Children.Add(label);
-
-                        Grid gridOutputs = new Grid();
-                        {
-                            addNMStarHighRowsToGrid(3, 1, ref gridOutputs);
-                            Grid.SetColumn(gridOutputs, 2);
-                            addNLabelsToGridWithStringValueAndAddToList(3, ref gridOutputs, "-", ref currentTestDataAndFields.resultValueLabels);
-                        }
-                        grid.Children.Add(gridOutputs);
-
-                        label = new Label();
-                        {
-                            Grid.SetColumn(label, 0);
-                            Grid.SetRow(label, 1);
-                            Grid.SetColumnSpan(label, 3);
-                            label.HorizontalAlignment = HorizontalAlignment.Center;
-                            currentTestDataAndFields.resultLabel = label;
-                        }
-                        grid.Children.Add(label);
-
-                        Button button = new Button();
-                        {
-                            Grid.SetColumn(button, 0);
-                            Grid.SetRow(button, 2);
-                            Grid.SetColumnSpan(button, 3);
-                            button.Content = "Więcej";
-                            button.Tag = currentTestDataAndFields;
-                            button.Click += displayMoreInformation;
-                            currentTestDataAndFields.moreButton = button;
-                        }
-                        grid.Children.Add(button);
-                    }
-                    groupBox.Content = grid;
-                }
-                uniformGrid.Children.Add(groupBox);
-                listOfTestDataAndFields.Add(currentTestDataAndFields);
-            }
-
-            return uniformGrid;
-        }
-
         public MainWindow ()
         {
             InitializeComponent();
+
+            CultureInfo.CurrentCulture = new CultureInfo("pl-PL");
+            CultureInfo.CurrentUICulture = new CultureInfo("pl-PL");
+
             string[] modes = new string[2] { "Tryb synchroniczny", "Tryb asynchroniczny" };
             bool synchronousMode = true;
             synchronousTestDataAndFields = new List<TestDataAndFields>();
@@ -266,7 +88,7 @@ namespace Projekt1ZMSI
                 GroupBox modeGroupBox = new GroupBox();
                 {
                     modeGroupBox.Header = modes[j];
-                    modeGroupBox.Content = createTestDataAndFieldsReturnUniformGridContainingResultElements(synchronousMode, ref targetTestDataAndFields);
+                    modeGroupBox.Content = LayoutGenerationHelpers.createTestDataAndFieldsReturnUniformGridContainingResultElements(synchronousMode, ref targetTestDataAndFields);
                 }
                 resultsPassedWeights.Children.Add(modeGroupBox);
                 targetTestDataAndFields = asynchronousTestDataAndFields;
@@ -281,238 +103,7 @@ namespace Projekt1ZMSI
             }
         }
 
-        private double calculateEnergySynchonized (DMU.Math.Matrix weightsMatrix, DMU.Math.Matrix matrix, DMU.Math.Matrix previousStepMatrix, DMU.Math.Matrix matrixI = null)
-        {
-            double result = 0;
-
-            for (int i = 0; i < 3; i++) {
-                for (int j = 0; j < 3; j++) {
-                    result += weightsMatrix.GetElement(i, j) * matrix.GetElement(i, 0) * previousStepMatrix.GetElement(j, 0);
-                }
-            }
-
-            result = -result;
-
-            if (matrixI != null) {
-                for (int i = 0; i < 3; i++) {
-                    result += matrixI.GetElement(i, 0) * (matrix.GetElement(i, 0) + previousStepMatrix.GetElement(i, 0));
-                }
-            }
-
-            return Math.Round(result, 3);
-        }
-
-        private double calculateEnergyAsynchonized (DMU.Math.Matrix weightsMatrix, DMU.Math.Matrix matrix)
-        {
-            double result = 0;
-
-            for (int i = 0; i < 3; i++) {
-                for (int j = 0; j < 3; j++) {
-                    result += weightsMatrix.GetElement(i, j) * matrix.GetElement(i, 0) * matrix.GetElement(j, 0);
-                }
-            }
-
-            result = -(result / 2);
-
-            return Math.Round(result, 3);
-        }
-
-        private void setMatrixValuesToListOfLabels (DMU.Math.Matrix matrix, List<Label> labels)
-        {
-            for (int i = 0; i < labels.Count; i++) {
-                labels[i].Content = matrix.GetElement(i, 0);
-            }
-        }
-
-        private bool isMatrixSymmetric (DMU.Math.Matrix matrix)
-        {
-            for (int i = 0; i < 3; i++) {
-                for (int j = 0; j < 3; j++) {
-                    if (!matrix.GetElement(i, j).Equals(matrix.GetElement(j, i))) {
-                        return false;
-                    }
-                }
-            }
-            return true;
-        }
-
-        public static string resultTypeToString (ResultType resultType)
-        {
-            string result = "";
-
-            switch (resultType) {
-                case ResultType.Static: {
-                    result = "Punkt stały";
-                } break;
-
-                case ResultType.GoesToPoint: {
-                    result = "Wpada do punktu stałego";
-                } break;
-
-                case ResultType.CreatesCycle: {
-                    result = "Tworzy cykl";
-                } break;
-
-                case ResultType.GoesToCycle: {
-                    result = "Wpada w cykl";
-                } break;
-
-                default: { } break;
-            }
-
-            return result;
-        }
-
-        private void fillPointAnalysisData(ref List<PointAnalysisResult> pointAnalysisResults, ResultType resultType, int pointIndex)
-        {
-            switch (resultType) {
-                case ResultType.Static: {
-                    pointAnalysisResults[pointIndex].amountOfStaticResult++;
-                } break;
-
-                case ResultType.GoesToPoint: {
-                    pointAnalysisResults[pointIndex].amountOfGoesToStaticResult++;
-                } break;
-
-                case ResultType.CreatesCycle: {
-                    pointAnalysisResults[pointIndex].amountOfCreatesCycleResult++;
-                } break;
-
-                case ResultType.GoesToCycle: {
-                    pointAnalysisResults[pointIndex].amountOGoesToCycleResult++;
-                } break;
-
-                default: { } break;
-            }
-        }
-
-        private void runSynchronousAnalysisForTestDataListWithWeights (ref List<TestDataAndFields> listOfTestDataAndFields, ref DMU.Math.Matrix weightsMatrix, bool isWeightsMatrixSymetric = true, List<PointAnalysisResult> pointAnalysisResults = null)
-        {
-            for (int j = 0; j < listOfTestDataAndFields.Count; j++) {
-                TestDataAndFields currentTestDataAndFields = listOfTestDataAndFields[j];
-                currentTestDataAndFields.iterationHistory = new List<SingleIterationResult>();
-                currentTestDataAndFields.currentValue = currentTestDataAndFields.startingValue;
-
-                for (int i = 0; i < 8; i++) {
-                    DMU.Math.Matrix previousStepMatrix = currentTestDataAndFields.currentValue.Clone();
-                    SingleIterationResult iterationResult = new SingleIterationResult();
-
-                    currentTestDataAndFields.currentValue = DMU.Math.Matrix.Multiply(weightsMatrix, currentTestDataAndFields.currentValue);
-                    iterationResult.matrixResult = DMU.Math.Matrix.Add(currentTestDataAndFields.currentValue, matrixI);
-                    currentTestDataAndFields.currentValue = currentTestDataAndFields.currentValue.ToBiPolar();
-                    iterationResult.matrixResultBiPolar = currentTestDataAndFields.currentValue;
-                    iterationResult.energy = calculateEnergySynchonized(weightsMatrix, currentTestDataAndFields.currentValue, previousStepMatrix, matrixI);
-
-                    currentTestDataAndFields.iterationHistory.Add(iterationResult);
-
-                    if (previousStepMatrix.Equals(iterationResult.matrixResultBiPolar)) {
-                        if (i == 0) {
-                            currentTestDataAndFields.resultType = ResultType.Static;
-                        } else {
-                            currentTestDataAndFields.resultType = ResultType.GoesToPoint;
-                        }
-
-                        setMatrixValuesToListOfLabels(iterationResult.matrixResultBiPolar, currentTestDataAndFields.resultValueLabels);
-
-                        break;
-                    }
-
-                    if (isWeightsMatrixSymetric && i != 0) {
-                        double previousStepEnergy = currentTestDataAndFields.iterationHistory[i - 1].energy;
-                        if (previousStepEnergy == iterationResult.energy) {
-                            if (currentTestDataAndFields.startingValue.Equals(currentTestDataAndFields.currentValue)) {
-                                currentTestDataAndFields.resultType = ResultType.CreatesCycle;
-                            } else {
-                                currentTestDataAndFields.resultType = ResultType.GoesToCycle;
-                            }
-
-                            setMatrixValuesToListOfLabels(iterationResult.matrixResultBiPolar, currentTestDataAndFields.resultValueLabels);
-
-                            break;
-                        }
-                    }
-
-                    if (i == 7) {
-                        setMatrixValuesToListOfLabels(iterationResult.matrixResultBiPolar, currentTestDataAndFields.resultValueLabels);
-                    }
-
-                    currentTestDataAndFields.currentValue = iterationResult.matrixResultBiPolar;
-                }
-
-                if (pointAnalysisResults != null) {
-                    fillPointAnalysisData(ref pointAnalysisResults, currentTestDataAndFields.resultType, j);
-                }
-
-                currentTestDataAndFields.resultLabel.Content = resultTypeToString(currentTestDataAndFields.resultType);
-            }
-        }
-
-        private void runAsynchronousAnalysisForTestDataListWithWeights (ref List<TestDataAndFields> listOfTestDataAndFields, ref DMU.Math.Matrix weightsMatrix, List<PointAnalysisResult> pointAnalysisResults = null)
-        {
-            for (int j = 0; j < listOfTestDataAndFields.Count; j++) {
-                TestDataAndFields currentTestDataAndFields = listOfTestDataAndFields[j];
-                for (int i = 0; i < 8; i++) {
-                    bool finished = false;
-
-                    for (int k = 0; k < 3; k++) {
-                        DMU.Math.Matrix previousStepMatrix = currentTestDataAndFields.currentValue.Clone();
-                        SingleIterationResult iterationResult = new SingleIterationResult();
-
-                        currentTestDataAndFields.currentValue = DMU.Math.Matrix.Multiply(weightsMatrix, currentTestDataAndFields.currentValue);
-
-                        for (int l = 1; l <= 3; l++) {
-                            if (l != asynchronousOrder[k]) {
-                                currentTestDataAndFields.currentValue.SetElement(l - 1, 0, previousStepMatrix.GetElement(l - 1, 0));
-                            }
-                        }
-
-                        iterationResult.matrixResult = currentTestDataAndFields.currentValue;
-                        currentTestDataAndFields.currentValue = currentTestDataAndFields.currentValue.ToBiPolar();
-                        iterationResult.matrixResultBiPolar = currentTestDataAndFields.currentValue;
-                        iterationResult.energy = calculateEnergyAsynchonized(weightsMatrix, currentTestDataAndFields.currentValue);
-
-                        currentTestDataAndFields.iterationHistory.Add(iterationResult);
-
-                        if (i != 0 || (i == 0 && k == 2)) {
-                            DMU.Math.Matrix thirdToLastStepResult = i != 0 ? currentTestDataAndFields.iterationHistory[i * 3 + k - 3].matrixResultBiPolar : currentTestDataAndFields.startingValue;
-                            DMU.Math.Matrix secondToLastStepResult = currentTestDataAndFields.iterationHistory[i * 3 + k - 2].matrixResultBiPolar;
-                            DMU.Math.Matrix previousStepResult = currentTestDataAndFields.iterationHistory[i * 3 + k - 1].matrixResultBiPolar;
-
-                            if (currentTestDataAndFields.currentValue.Equals(previousStepResult) &&
-                                currentTestDataAndFields.currentValue.Equals(secondToLastStepResult) &&
-                                currentTestDataAndFields.currentValue.Equals(thirdToLastStepResult)
-                                ) {
-                                if (currentTestDataAndFields.currentValue.Equals(currentTestDataAndFields.startingValue)) {
-                                    currentTestDataAndFields.resultType = ResultType.Static;
-                                } else {
-                                    currentTestDataAndFields.resultType = ResultType.GoesToPoint;
-                                }
-
-                                setMatrixValuesToListOfLabels(iterationResult.matrixResultBiPolar, currentTestDataAndFields.resultValueLabels);
-                                finished = true;
-
-                                break;
-                            }
-                        }
-
-                        if (i == 7 && k == 2) {
-                            setMatrixValuesToListOfLabels(iterationResult.matrixResultBiPolar, currentTestDataAndFields.resultValueLabels);
-                        }
-                    }
-
-                    if (pointAnalysisResults != null) {
-                        fillPointAnalysisData(ref pointAnalysisResults, currentTestDataAndFields.resultType, j);
-                    }
-
-                    if (finished) {
-                        currentTestDataAndFields.resultLabel.Content = resultTypeToString(currentTestDataAndFields.resultType);
-                        break;
-                    }
-                }
-            }
-        }
-
-        private bool checkAndSaveAsychrnonousActivationOrder()
+        private bool checkAndSaveAsychrnonousActivationOrder ()
         {
             bool result = true;
 
@@ -575,17 +166,17 @@ namespace Projekt1ZMSI
             }
 
             passedWeightsMatrix = new DMU.Math.Matrix(weightValues);
-            bool isWeightsMatrixSymetric = isMatrixSymmetric(passedWeightsMatrix);
+            bool isWeightsMatrixSymetric = Calculations.isMatrixSymmetric(passedWeightsMatrix);
 
             if (weightsOK && checkAndSaveAsychrnonousActivationOrder()) {
-                runSynchronousAnalysisForTestDataListWithWeights(ref synchronousTestDataAndFields, ref passedWeightsMatrix, isWeightsMatrixSymetric);
-                runAsynchronousAnalysisForTestDataListWithWeights(ref asynchronousTestDataAndFields, ref passedWeightsMatrix);
+                Calculations.runSynchronousAnalysisForTestDataListWithWeights(ref synchronousTestDataAndFields, ref passedWeightsMatrix, isWeightsMatrixSymetric);
+                Calculations.runAsynchronousAnalysisForTestDataListWithWeights(ref asynchronousTestDataAndFields, ref passedWeightsMatrix, asynchronousOrder);
 
                 passedWeightsModeHasResults = true;
             }
         }
 
-        private void displayMoreInformation (object sender, RoutedEventArgs e)
+        public static void displayMoreInformation (object sender, RoutedEventArgs e)
         {
             Button button = (Button)sender;
             TestDataAndFields testDataAndFields = (TestDataAndFields)button.Tag;
@@ -593,79 +184,6 @@ namespace Projekt1ZMSI
             MoreWindow moreWindow = new MoreWindow();
             moreWindow.displayInformation(testDataAndFields);
             moreWindow.Show();
-        }
-
-        private string convertResultsToString(List<TestDataAndFields> resultsToConvert, DMU.Math.Matrix weightsMatrix, string title)
-        {
-            string matrixNumberFormatting = "F1";
-            string matrixColumnDelimiteFormatting = "\t";
-            string matrixRowDelimiterFormatting = "\n";
-
-            StringBuilder stringBuilder = new StringBuilder();
-            stringBuilder.AppendLine(title);
-            stringBuilder.AppendLine("Macierz wag (W):");
-            stringBuilder.Append(weightsMatrix.ToString(matrixNumberFormatting, matrixColumnDelimiteFormatting, matrixRowDelimiterFormatting));
-
-            foreach (TestDataAndFields testDataAndFields in resultsToConvert) {
-                stringBuilder.AppendLine("----------------------------------------------------");
-                stringBuilder.AppendLine("--- Badanie nr. " + (testDataAndFields.index + 1) + " ---");
-                stringBuilder.AppendLine("----------------------------------------------------");
-                stringBuilder.AppendLine("Badany wektor:");
-                stringBuilder.AppendLine(DMU.Math.Matrix.Transpose(testDataAndFields.startingValue).ToString(matrixNumberFormatting, matrixColumnDelimiteFormatting, matrixRowDelimiterFormatting));
-
-                int i = 1;
-                foreach (SingleIterationResult singleIterationResult in testDataAndFields.iterationHistory) {
-                    stringBuilder.AppendLine("Krok: " + i + "-------------------");
-                    stringBuilder.AppendLine("Potencjał wejściowy (U):");
-                    stringBuilder.AppendLine(DMU.Math.Matrix.Transpose(singleIterationResult.matrixResult).ToString(matrixNumberFormatting, matrixColumnDelimiteFormatting, ""));
-                    stringBuilder.AppendLine("Potencjał wyjściowy (V):");
-                    stringBuilder.AppendLine(DMU.Math.Matrix.Transpose(singleIterationResult.matrixResultBiPolar).ToString(matrixNumberFormatting, matrixColumnDelimiteFormatting, matrixRowDelimiterFormatting));
-                    stringBuilder.AppendLine("Energia(" + i + ")= " + singleIterationResult.energy);
-                    stringBuilder.AppendLine();
-
-                    i++;
-                }
-
-                stringBuilder.Append("Wniosek: Punkt [" + DMU.Math.Matrix.Transpose(testDataAndFields.startingValue).ToString(matrixNumberFormatting, " ", "") + "] " + resultTypeToString(testDataAndFields.resultType));
-                switch (testDataAndFields.resultType) {
-                    case ResultType.GoesToPoint: {
-                            stringBuilder.Append(": [" + DMU.Math.Matrix.Transpose(testDataAndFields.currentValue).ToString(matrixNumberFormatting, " ", "") + "]");
-                    } break;
-
-                    case ResultType.CreatesCycle:
-                    case ResultType.GoesToCycle: {
-                            SingleIterationResult secondToLastIterationResult = testDataAndFields.iterationHistory[testDataAndFields.iterationHistory.Count - 2];
-                            stringBuilder.Append(": [" + DMU.Math.Matrix.Transpose(testDataAndFields.currentValue).ToString(matrixNumberFormatting, " ", "") + "] <->" + " [" + DMU.Math.Matrix.Transpose(secondToLastIterationResult.matrixResultBiPolar).ToString(matrixNumberFormatting, " ", "") + "]");
-                    } break;
-                }
-                stringBuilder.AppendLine();
-            }
-
-            return stringBuilder.ToString();
-        }
-
-        private string convertPointAnalysisDataToString(List<PointAnalysisResult> pointAnalysisResults)
-        {
-            StringBuilder stringBuilder = new StringBuilder();
-
-            stringBuilder.AppendLine(
-                "Wektor".PadRight(10) + " " + "Stały".PadRight(5) + " " +
-                "Zbieżny".PadRight(7) + " " +
-                "Tworzy cykl".PadRight(11) + " " +
-                "Wpada w cykl".PadRight(12)
-            );
-
-            foreach (PointAnalysisResult pointAnalysisResult in pointAnalysisResults) {
-                stringBuilder.AppendLine(
-                    ("[" + DMU.Math.Matrix.Transpose(pointAnalysisResult.point).ToString("F0", " ", "") + "]").PadRight(10) + " " +
-                    pointAnalysisResult.amountOfStaticResult.ToString().PadRight(5) + " " +
-                    pointAnalysisResult.amountOfGoesToStaticResult.ToString().PadRight(7) + " " +
-                    pointAnalysisResult.amountOfCreatesCycleResult.ToString().PadRight(11) + " " +
-                    pointAnalysisResult.amountOGoesToCycleResult.ToString().PadRight(12)
-                );
-            }
-
-            return stringBuilder.ToString();
         }
 
         private void saveResultsToTextFile (object sender, RoutedEventArgs e)
@@ -678,9 +196,9 @@ namespace Projekt1ZMSI
                     saveFileDialog.Filter = "Plik tekstowy (*.txt)|*.txt";
 
                     if (saveFileDialog.ShowDialog() == true) {
-                        string text = convertResultsToString(synchronousTestDataAndFields, passedWeightsMatrix, "Badanie w trybie synchronicznym. Wektor I = [" + DMU.Math.Matrix.Transpose(matrixI).ToString("F1", " ", "") + "]");
+                        string text = DataConverters.convertResultsToString(synchronousTestDataAndFields, passedWeightsMatrix, "Badanie w trybie synchronicznym. Wektor I = [" + DMU.Math.Matrix.Transpose(Calculations.matrixI).ToString("F1", " ", "") + "]");
                         text += "\n############################\n";
-                        text += convertResultsToString(asynchronousTestDataAndFields, passedWeightsMatrix, "Badanie w trybie asynchronicznym. Kolejność aktywacji neuronów: " + asynchronousOrder[0] + ", " + asynchronousOrder[1] + ", " + asynchronousOrder[2]);
+                        text += DataConverters.convertResultsToString(asynchronousTestDataAndFields, passedWeightsMatrix, "Badanie w trybie asynchronicznym. Kolejność aktywacji neuronów: " + asynchronousOrder[0] + ", " + asynchronousOrder[1] + ", " + asynchronousOrder[2]);
 
                         File.WriteAllText(saveFileDialog.FileName, text);
                     }
@@ -701,12 +219,12 @@ namespace Projekt1ZMSI
                             string title = "";
 
                             if (randomWeightsSynchronousMode) {
-                                title = "Badanie w trybie synchronicznym. Wektor I = [" + DMU.Math.Matrix.Transpose(matrixI).ToString("F1", " ", "") + "]";
+                                title = "Badanie w trybie synchronicznym. Wektor I = [" + DMU.Math.Matrix.Transpose(Calculations.matrixI).ToString("F1", " ", "") + "]";
                             } else {
                                 title = "Badanie w trybie asynchronicznym. Kolejność aktywacji neuronów: " + asynchronousOrder[0] + ", " + asynchronousOrder[1] + ", " + asynchronousOrder[2];
                             }
 
-                            text += convertResultsToString(listOfTestDataAndFields, weightsMatrix, title);
+                            text += DataConverters.convertResultsToString(listOfTestDataAndFields, weightsMatrix, title);
 
                             if (i + 1 < randomWeightsMatrixesAnalysisResults.Count) {
                                 text += "\n############################\n";
@@ -715,7 +233,7 @@ namespace Projekt1ZMSI
 
                         text += "\n######### PODSUMOWANIE #########\n";
                         text += "Liczba losowań: " + randomWeigthMatrixes.Count + "\n\n";
-                        text += convertPointAnalysisDataToString(pointAnalysisResults);
+                        text += DataConverters.convertPointAnalysisDataToString(pointAnalysisResults);
 
                         File.WriteAllText(saveFileDialog.FileName, text);
                     }
@@ -771,6 +289,7 @@ namespace Projekt1ZMSI
 
                         resultsRandomWeights.Children.Clear();
                         randomWeightsMatrixesAnalysisResults.Clear();
+                        randomWeigthMatrixes.Clear();
 
                         GroupBox modeGroupBox = new GroupBox();
                         {
@@ -782,8 +301,8 @@ namespace Projekt1ZMSI
                                     resultsSummaryGroupBox.Header = "Podsumowanie";
                                     Grid resultsSummaryGrid = new Grid();
                                     {
-                                        addNMStarHighRowsToGrid(9, 1, ref resultsSummaryGrid);
-                                        addNMStarWideColumnsToGrid(5, 1, ref resultsSummaryGrid);
+                                        LayoutGenerationHelpers.addNMStarHighRowsToGrid(9, 1, ref resultsSummaryGrid);
+                                        LayoutGenerationHelpers.addNMStarWideColumnsToGrid(5, 1, ref resultsSummaryGrid);
                                         string[] labelValues0 = new string[9];
                                         string[] labelValues1 = new string[9];
                                         string[] labelValues2 = new string[9];
@@ -805,11 +324,11 @@ namespace Projekt1ZMSI
                                             labelIndex++;
                                         }
 
-                                        addNLabelsToGridWithArrayAsContentSetColumnAddToResultList(9, 0, ref resultsSummaryGrid, labelValues0, pointAnalysisResults);
-                                        addNLabelsToGridWithArrayAsContentSetColumnAddToResultList(9, 1, ref resultsSummaryGrid, labelValues1, pointAnalysisResults);
-                                        addNLabelsToGridWithArrayAsContentSetColumnAddToResultList(9, 2, ref resultsSummaryGrid, labelValues2, pointAnalysisResults);
-                                        addNLabelsToGridWithArrayAsContentSetColumnAddToResultList(9, 3, ref resultsSummaryGrid, labelValues3, pointAnalysisResults);
-                                        addNLabelsToGridWithArrayAsContentSetColumnAddToResultList(9, 4, ref resultsSummaryGrid, labelValues4, pointAnalysisResults);
+                                        LayoutGenerationHelpers.addNLabelsToGridWithArrayAsContentSetColumnAddToResultList(9, 0, ref resultsSummaryGrid, labelValues0, pointAnalysisResults);
+                                        LayoutGenerationHelpers.addNLabelsToGridWithArrayAsContentSetColumnAddToResultList(9, 1, ref resultsSummaryGrid, labelValues1, pointAnalysisResults);
+                                        LayoutGenerationHelpers.addNLabelsToGridWithArrayAsContentSetColumnAddToResultList(9, 2, ref resultsSummaryGrid, labelValues2, pointAnalysisResults);
+                                        LayoutGenerationHelpers.addNLabelsToGridWithArrayAsContentSetColumnAddToResultList(9, 3, ref resultsSummaryGrid, labelValues3, pointAnalysisResults);
+                                        LayoutGenerationHelpers.addNLabelsToGridWithArrayAsContentSetColumnAddToResultList(9, 4, ref resultsSummaryGrid, labelValues4, pointAnalysisResults);
                                     }
                                     resultsSummaryGroupBox.Content = resultsSummaryGrid;
                                 }
@@ -818,9 +337,9 @@ namespace Projekt1ZMSI
                                 for (int i = 0; i < amountOfRandomWeightsMatrixes; i++) {
                                     Grid grid = new Grid();
                                     {
-                                        addNMStarHighRowsToGrid(1, 1, ref grid);
-                                        addNMStarHighRowsToGrid(1, 3, ref grid);
-                                        addNMStarWideColumnsToGrid(3, 1, ref grid);
+                                        LayoutGenerationHelpers.addNMStarHighRowsToGrid(1, 1, ref grid);
+                                        LayoutGenerationHelpers.addNMStarHighRowsToGrid(1, 3, ref grid);
+                                        LayoutGenerationHelpers.addNMStarWideColumnsToGrid(3, 1, ref grid);
 
                                         DMU.Math.Matrix weightsMatrix = new DMU.Math.Matrix(3, 3);
 
@@ -841,7 +360,7 @@ namespace Projekt1ZMSI
                                             Grid.SetColumn(groupBox, 1);
                                             UniformGrid weightsMatrixGrid = new UniformGrid();
                                             {
-                                                addNLabelsToUniformGridWithArrayAsContent(9, ref weightsMatrixGrid, weightsMatrix.ToArray());
+                                                LayoutGenerationHelpers.addNLabelsToUniformGridWithArrayAsContent(9, ref weightsMatrixGrid, weightsMatrix.ToArray());
                                             }
                                             groupBox.Content = weightsMatrixGrid;
                                         }
@@ -849,7 +368,7 @@ namespace Projekt1ZMSI
 
                                         List<TestDataAndFields> currentTestDataAndFieldsList = new List<TestDataAndFields>();
 
-                                        UniformGrid uniformGrid = createTestDataAndFieldsReturnUniformGridContainingResultElements(randomWeightsSynchronousMode, ref currentTestDataAndFieldsList);
+                                        UniformGrid uniformGrid = LayoutGenerationHelpers.createTestDataAndFieldsReturnUniformGridContainingResultElements(randomWeightsSynchronousMode, ref currentTestDataAndFieldsList);
                                         Grid.SetRow(uniformGrid, 1);
                                         Grid.SetColumnSpan(uniformGrid, 3);
                                         grid.Children.Add(uniformGrid);
@@ -857,9 +376,9 @@ namespace Projekt1ZMSI
                                         randomWeightsMatrixesAnalysisResults.Add(currentTestDataAndFieldsList);
 
                                         if (randomWeightsSynchronousMode) {
-                                            runSynchronousAnalysisForTestDataListWithWeights(ref currentTestDataAndFieldsList, ref weightsMatrix, true, pointAnalysisResults);
+                                            Calculations.runSynchronousAnalysisForTestDataListWithWeights(ref currentTestDataAndFieldsList, ref weightsMatrix, true, pointAnalysisResults);
                                         } else {
-                                            runAsynchronousAnalysisForTestDataListWithWeights(ref currentTestDataAndFieldsList, ref weightsMatrix, pointAnalysisResults);
+                                            Calculations.runAsynchronousAnalysisForTestDataListWithWeights(ref currentTestDataAndFieldsList, ref weightsMatrix, asynchronousOrder, pointAnalysisResults);
                                         }
 
                                         randomWeigthMatrixes.Add(weightsMatrix);

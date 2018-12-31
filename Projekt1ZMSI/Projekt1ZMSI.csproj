@@ -54,6 +54,9 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Calculations.cs" />
+    <Compile Include="DataConverters.cs" />
+    <Compile Include="LayoutGenerationHelpers.cs" />
     <Compile Include="Resources\ErrorMessages.Designer.cs" />
     <Compile Include="MoreWindow.xaml.cs">
       <DependentUpon>MoreWindow.xaml</DependentUpon>
