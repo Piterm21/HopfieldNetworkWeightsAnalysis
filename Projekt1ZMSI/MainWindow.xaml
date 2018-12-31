@@ -1,0 +1,98 @@
+﻿<Window x:Class="Projekt1ZMSI.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Projekt1ZMSI"
+        mc:Ignorable="d"
+        Title="Hopfield" Height="450" Width="1000">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"></RowDefinition>
+            <RowDefinition Height="1*"></RowDefinition>
+        </Grid.RowDefinitions>
+        <Menu DockPanel.Dock="Top">
+            <MenuItem Header="Plik">
+                <MenuItem Header="Zapisz wyniki do pliku" Click="saveResultsToTextFile"/>
+            </MenuItem>
+        </Menu>
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1*"></ColumnDefinition>
+                <ColumnDefinition Width="3*"></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+            <Grid Grid.Column="0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"></RowDefinition>
+                    <RowDefinition Height="3*"></RowDefinition>
+                    <RowDefinition Height="1*"></RowDefinition>
+                </Grid.RowDefinitions>
+                <StackPanel Grid.ColumnSpan="2">
+                    <GroupBox Header="Tryb">
+                        <StackPanel>
+                            <RadioButton IsChecked="true" Click="setPassedWeightsMode">Wybierz wagi</RadioButton>
+                            <RadioButton Click="setRandomWeightsMode">Automatyczne generowanie wag</RadioButton>
+                        </StackPanel>
+                    </GroupBox>
+                </StackPanel>
+                <GroupBox Grid.Row="1" Header="Wagi" Name="passedWeightsParameters" >
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="3*" ></ColumnDefinition>
+                            <ColumnDefinition Width="1*" ></ColumnDefinition>
+                        </Grid.ColumnDefinitions>
+                        <UniformGrid Grid.Column="0" Name="weights">
+                            <TextBox TextAlignment="Center" VerticalContentAlignment="Center" ></TextBox>
+                            <TextBox TextAlignment="Center" VerticalContentAlignment="Center" ></TextBox>
+                            <TextBox TextAlignment="Center" VerticalContentAlignment="Center" ></TextBox>
+                            <TextBox TextAlignment="Center" VerticalContentAlignment="Center" ></TextBox>
+                            <TextBox TextAlignment="Center" VerticalContentAlignment="Center" ></TextBox>
+                            <TextBox TextAlignment="Center" VerticalContentAlignment="Center" ></TextBox>
+                            <TextBox TextAlignment="Center" VerticalContentAlignment="Center" ></TextBox>
+                            <TextBox TextAlignment="Center" VerticalContentAlignment="Center" ></TextBox>
+                            <TextBox TextAlignment="Center" VerticalContentAlignment="Center" ></TextBox>
+                        </UniformGrid>
+                        <Button Grid.Row="1" Grid.Column="1" Content="Start" Click="startPassedWeightsAnalysis"></Button>
+                    </Grid>
+                </GroupBox>
+                <GroupBox Grid.Row="1" Header="Parametry" Name="randomWeightsParameters" Visibility="Collapsed">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"></ColumnDefinition>
+                            <ColumnDefinition Width="1*"></ColumnDefinition>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"></RowDefinition>
+                            <RowDefinition Height="Auto"></RowDefinition>
+                            <RowDefinition Height="Auto"></RowDefinition>
+                        </Grid.RowDefinitions>
+                        <Label Grid.Column="0">Ilość losowych macierzy wag:</Label>
+                        <TextBox Grid.Column="1" Name="amountOfRandomWeightsMatrixesTextBox" HorizontalContentAlignment="Center" VerticalAlignment="Center"></TextBox>
+                        <GroupBox Grid.Row="1" Grid.ColumnSpan="2" Header="Tryb działania sieci">
+                            <StackPanel>
+                                <RadioButton Click="setRandomWeightsModeSynchronous" IsChecked="true">Synchoniczny</RadioButton>
+                                <RadioButton Click="setRandomWeightsModeAsynchronous">Asynchroniczny</RadioButton>
+                            </StackPanel>
+                        </GroupBox>
+                        <Button Grid.Row="2" Grid.ColumnSpan="2" Click="startRandomWeightsAnalysis">Start</Button>
+                    </Grid>
+                </GroupBox>
+                <GroupBox Header="Kolejność aktywacji neuronów" Grid.Row="2" Grid.ColumnSpan="2">
+                    <UniformGrid Rows="1" Name="neuronActivationOrder">
+                        <TextBox TextAlignment="Center" VerticalContentAlignment="Center" Text="1"></TextBox>
+                        <TextBox TextAlignment="Center" VerticalContentAlignment="Center" Text="2"></TextBox>
+                        <TextBox TextAlignment="Center" VerticalContentAlignment="Center" Text="3"></TextBox>
+                    </UniformGrid>
+                </GroupBox>
+            </Grid>
+            <ScrollViewer Grid.Column="1">
+                <Grid>
+                    <UniformGrid Columns="1" Name="resultsPassedWeights">
+                    </UniformGrid>
+                    <UniformGrid Columns="1" Visibility="Collapsed" Name="resultsRandomWeights">
+                    </UniformGrid>
+                </Grid>
+            </ScrollViewer>
+        </Grid>
+    </Grid>
+</Window>
