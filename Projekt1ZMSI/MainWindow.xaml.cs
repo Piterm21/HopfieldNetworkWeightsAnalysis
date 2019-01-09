@@ -16,6 +16,9 @@ using System.Windows.Controls.Primitives;
 using System.IO;
 using System.Globalization;
 
+// Kod został napisany samodzielnie
+// Członkowie grupy: Piotr Bachur, Krzysztof Marciniak
+
 namespace Projekt1ZMSI
 {
     public enum ResultType { None, Static, CreatesCycle, GoesToPoint, GoesToCycle };
